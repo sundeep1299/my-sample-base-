@@ -1,0 +1,294 @@
+
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <cmath>
+#include "ArrivalCityList.h"
+
+#ifndef MINPRIORITYQUEUE_H_
+#define MINPRIORITYQUEUE_H_
+
+
+#pragma
+using namespace std;
+
+// Each node of the graph which is a departure City
+struct DepCity
+{
+    string depCityName;
+    int d;
+    struct DepCity *pi;
+    ArrivalCityList *arrCityList;
+};
+
+// class MinPriorityQueue represents a Min-heap that contains DepCity objects.
+// The key of each DepCity is its d value.
+class MinPriorityQueue
+{
+private:
+    struct DepCity *depCityArr; // a DepCity array
+    int capacity, size;
+
+public:
+    MinPriorityQueue(int capacity);
+    ~MinPriorityQueue();
+
+    DepCity *getDepCityArr();
+    int getSize();
+    int getCapacity();
+    int isFound(string oneDepCityName);
+    bool decreaseKey(int index, DepCity oneDepCityWithNewDValue);
+    bool insert(DepCity oneDepCity);
+    void heapify(int index);
+    DepCity getHeapMin();
+    void extractHeapMin();
+    int leftChild(int parentIndex);
+    int rightChild(int parentIndex);
+    int parent(int childIndex);
+    void printHeap();
+    void build_min_heap();
+
+    void setDistance(int index, int distance);
+    void clear();
+
+};
+
+//*********************************************************
+void MinPriorityQueue::printHeap() {
+    cout << "printHeap() called!" << endl;
+    if (getSize() == 0) {
+        cout << "\nEmpty heap, no elements" << endl;
+        return;
+    }
+    cout << left;
+    cout << "\nHeap size = " << getSize() << endl;
+    cout << "\n";
+    cout << left;
+    cout << setw(15) << "Dep City"
+         << setw(12) << "d Value"
+         << setw(15) << "PI"
+         << "Arrival City List" << endl;
+    for (int i = 0; i < size; i++) {
+        string PI;
+        if (depCityArr[i].pi == NULL) {
+            PI = "No Parent";
+        } else {
+            PI = depCityArr[i].pi->depCityName;
+        }
+        cout << "\n";
+        cout << left;
+        cout << setw(15) << depCityArr[i].depCityName
+             << setw(12) << fixed << depCityArr[i].d
+             << setw(15) << PI;
+        depCityArr[i].arrCityList->printArrCityList();
+    }
+}
+    /*cout << "\nHeap size = " << getSize() << "\n"
+         << endl;
+
+    cout << left;
+    cout << setw(15) << "Dep. City"
+         << setw(12) << "d Value"
+         << setw(15) << "PI"
+         << "Arrival City List" << endl;
+
+    for (int i = 0; i < size; i++)
+    {
+        cout << setw(15) << depCityArr[i].depCityName
+             << setw(12) << depCityArr[i].d;
+
+        if (depCityArr[i].pi == NULL)
+            cout << setw(15) << "NULL";
+        else
+            cout << setw(15) << depCityArr[i].pi->depCityName;
+
+        ArrivalCityList *currentArrCity = depCityArr[i].arrCityList;
+        currentArrCity->printArrCityList();
+        cout << endl;
+    }
+}*/
+
+//************************************************************
+// when you create the dummy node, initialize its d value to be
+// 30000 which represents infinite
+MinPriorityQueue::MinPriorityQueue(int capacity)
+{
+    depCityArr = new DepCity[capacity];
+    this->capacity = capacity;
+    size = 0;
+
+}
+
+//************************************************************
+MinPriorityQueue::~MinPriorityQueue()
+{
+    delete[] depCityArr;
+    //depCityArr = NULL;
+    size = 0;
+    //capacity = 0;
+}
+
+//************************************************************
+DepCity *MinPriorityQueue::getDepCityArr()
+{
+    return depCityArr;
+}
+
+//************************************************************
+int MinPriorityQueue::getSize()
+{
+    return size;
+}
+
+//************************************************************
+int MinPriorityQueue::getCapacity()
+{
+    return capacity;
+}
+
+//************************************************************
+
+
+//************************************************************
+
+// Check if a DepCity with the given name is present in the heap
+int MinPriorityQueue::isFound(string oneDepCityName)
+{
+    int index=-1;
+    for (int i = 0; i < size; i++)
+    {
+        if (depCityArr[i].depCityName == oneDepCityName)
+        {
+            index = i; // Return index of DepCity in heap
+            break;
+        }
+    }
+    return index; // DepCity not found in heap
+}
+// Decreases the d value of a DepCity node in the heap
+// and reorders the heap accordingly.
+bool MinPriorityQueue::decreaseKey(int index, DepCity oneDepCityWithNewDValue)
+{
+    // Check if the new d value is greater than or equal to the old d value
+    if (oneDepCityWithNewDValue.d >= depCityArr[index].d)
+    {
+        return false; // Cannot decrease the key
+    }
+    // Update the d value of the DepCity node
+    depCityArr[index].d = oneDepCityWithNewDValue.d;
+    // Update the pi value of the DepCity node
+    depCityArr[index].pi = oneDepCityWithNewDValue.pi;
+    // Reorder the heap to maintain the min-heap property
+    while (index > 0 && depCityArr[parent(index)].d > depCityArr[index].d)
+    {
+        // Swap the DepCity node with its parent
+        DepCity temp = depCityArr[index];
+        depCityArr[index] = depCityArr[parent(index)];
+        depCityArr[parent(index)] = temp;
+        // Update the index to point to the parent node
+        index = parent(index);
+    }
+    return true; // Decreased the key successfully
+}
+bool MinPriorityQueue::insert(DepCity oneDepCity)
+{
+    if (isFound(oneDepCity.depCityName) >= 0)
+    {
+        return false;
+    }
+
+    DepCity dummyCity;
+    dummyCity.d = oneDepCity.d; // Updated to actual distance value
+    dummyCity.depCityName = oneDepCity.depCityName;
+    dummyCity.pi = oneDepCity.pi;
+    dummyCity.arrCityList = oneDepCity.arrCityList;
+
+    size++;
+    depCityArr[size - 1] = dummyCity;
+
+    decreaseKey(size - 1, dummyCity); // Pass the actual distance value
+    return true;
+}
+void MinPriorityQueue::heapify(int index)
+{
+    int smallest = index;
+    int l = leftChild(index);
+    int r = rightChild(index);
+
+    if (l < size && depCityArr[l].d < depCityArr[index].d)
+    {
+        smallest = l;
+    }
+
+    if (r < size && depCityArr[r].d < depCityArr[smallest].d)
+    {
+        smallest = r;
+    }
+
+    if (smallest != index)
+    {
+        swap(depCityArr[index], depCityArr[smallest]);
+        heapify(smallest);
+    }
+}
+//*********************************************************
+// Returns the minimum element (DepCity object) from the heap
+DepCity MinPriorityQueue::getHeapMin()
+{
+    return depCityArr[0];
+}
+
+//*********************************************************
+// Extracts the minimum element (DepCity object) from the heap
+void MinPriorityQueue::extractHeapMin()
+{
+    if (size<1){
+        return;
+    }
+
+    depCityArr[0] = depCityArr[size-1];
+    size--;
+    heapify(0);
+}
+
+//*********************************************************
+// Returns the index of the left child of a node given its parent index
+// Returns the index of the left child of a node given its parent index
+int MinPriorityQueue::leftChild(int parentIndex)
+{
+    return 2 * parentIndex + 1;
+}
+
+//*********************************************************
+// Returns the index of the right child of a node given its parent index
+int MinPriorityQueue::rightChild(int parentIndex)
+{
+    return 2 * parentIndex + 2;
+}
+
+//*********************************************************
+// Returns the index of the parent node of a node given its child index
+int MinPriorityQueue::parent(int childIndex)
+{
+    return (childIndex - 1) / 2;
+}
+
+//*********************************************************
+// Builds the min heap from an unsorted array of DepCity objects
+void MinPriorityQueue::build_min_heap()
+{
+    for (int i = (getSize() - 1) / 2; i >= 0; i--)
+    {
+        heapify(i);
+    }
+}
+void MinPriorityQueue::setDistance(int index, int distance)
+{
+    depCityArr[index].d = distance;
+}
+
+void MinPriorityQueue::clear()
+{
+    size = 0;
+}
+#endif

@@ -1,0 +1,142 @@
+
+
+// include necessary header file here
+//----
+#include <iostream>
+#include <string>
+#include "Graph.h"
+
+using namespace std;
+
+void getCityInfo(string oneLine, string &depCityName, ArrivalCityList *arrCityList);
+void getArrCityInfo(string oneArrCityInfo, string &arrCityName, int &distance); //**optional
+
+int main()
+{
+   int count; // a variable for number of nodes
+   string oneLine, sourceCityName;
+   string answer = "yes"; // a variable to decide whether to run Dijkstra multiple times
+
+   cout << "Enter number of cities: ";
+   cin >> count;
+   cin.ignore(20, '\n');
+
+   // For each line of the file, we will create an ArrivalCityList(which is a linked list)
+   // for a specific departure city. It represents all its reachable arrival cities with distance info.
+   // Here we use an array of DepCity to store them
+   DepCity *depCityArr = new DepCity[count];
+   // Initialize depCityArr. Set each node's d value to be very large 10000
+   // initialize each arrival city list
+   for (int i = 0; i < count; i++)
+   {
+      depCityArr[i].d = 10000 + i; //***this is to make sure each node has different d value
+      depCityArr[i].arrCityList = new ArrivalCityList();
+      depCityArr[i].pi = NULL;
+   }
+
+   // get input line by line and create the depCityArr
+   for (int i = 0; i < count; i++)
+   {
+       //cout << "\nEnter one City info.: " << endl;
+       getline(cin, oneLine);
+       getCityInfo(oneLine, depCityArr[i].depCityName, depCityArr[i].arrCityList);
+   }
+
+// create a Graph object
+    MinPriorityQueue *depCityHeap = new MinPriorityQueue(count);
+    depCityHeap->build_min_heap();
+    Graph *graph = new Graph(count, depCityHeap);
+    graph->initialize_single_source(sourceCityName);
+
+    // print the graph adjacency list before running Dijkstra algorithm
+    cout << "\nPrint the graph adjacency list before running Dijkstra algorithm" << endl;
+    graph->printGraph();
+
+
+   // Next you need to design a sentinel value controlled while loop base on answer
+   // If user answer is 'yes', get source city name, run Dijkstra algorithm, print
+   // shortest path, then ask whether user want to continue or not...
+   while(answer == "yes") {
+       //cout<<endl;
+       int index = graph->findOneCity(sourceCityName);
+
+       if (index == -1) {
+           cout << endl;
+           //cout << "\nEnter source city name: ";
+           getline(cin, sourceCityName);
+       }
+
+       for (int i = 0; i < count; i++) {
+           depCityHeap->insert(depCityArr[i]);
+       }
+
+
+       // run Dijkstra algorithm
+       graph->dijkstra(sourceCityName);
+       graph->printDijkstraPath(sourceCityName);
+       //delete graph;
+       //delete depCityHeap;
+       //delete[] depCityArr;
+
+       // ask user whether to continue or not
+       cout << "\nDo you want to continue? (yes/no): ";
+       getline(cin,answer);
+       if (answer == "no") {
+           cout<<"Program Terminate";
+       }
+   }
+
+}
+
+//************************************************************************
+// Give one line in input file, this function extract tokens and get departure city
+// name and its arrival cities info.
+void getCityInfo(string oneLine, string &depCityName, ArrivalCityList *arrCityList)
+{
+    string delimiter = ",";
+    int pos = oneLine.find(delimiter);
+    string token = oneLine.substr(0, pos);
+    depCityName = token;
+    oneLine.erase(0, pos + delimiter.length());
+
+    string arrCityName;
+    int distance;
+    while (!oneLine.empty())
+    {
+        pos = oneLine.find(delimiter);
+        token = oneLine.substr(0, pos);
+        getArrCityInfo(token, arrCityName, distance);
+        if (arrCityName != "")
+        {
+            arrCityList->addArrCity(arrCityName, distance);
+        }
+
+        oneLine.erase(0, pos + delimiter.length());
+    }
+}
+void getArrCityInfo(string oneArrCityInfo, string &arrCityName, int &distance){
+    if (oneArrCityInfo.empty())
+    {
+        return;
+    }
+    string delimiter= "(";
+    int pos = oneArrCityInfo.find(delimiter);
+    string token = oneArrCityInfo.substr(0,pos);
+    arrCityName = token;
+
+    oneArrCityInfo.erase(0, pos + delimiter.length());
+
+    delimiter = ")";
+    pos = oneArrCityInfo.find(delimiter);
+
+    if (pos == -1)
+    {
+        distance = 0;
+        return;
+    }
+
+    token = oneArrCityInfo.substr(0, pos);
+    distance = stoi(token);
+    oneArrCityInfo.erase(0, pos + delimiter.length());
+
+}

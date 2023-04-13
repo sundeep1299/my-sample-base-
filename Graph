@@ -1,0 +1,180 @@
+#include <iostream>
+#include <string>
+#include <stack>
+#include "MinPriorityQueue.h"
+
+#ifndef GRAPH_H_
+#define GRAPH_H_
+
+#pragma
+
+
+using namespace std;
+class Graph
+{
+private:
+    int numOfNode;                 //number of vertices in the graph
+    MinPriorityQueue* cityHeap;    //adjacency list of the graph, it is a min-heap
+    //of departure city objects
+public:
+    Graph(int numOfNode, MinPriorityQueue* cityHeap);
+    ~Graph();
+    void printGraph();
+    void initialize_single_source(string sourceCityName);
+    void relax(DepCity u, DepCity v);
+    int findOneCity(string aCityName);
+    void dijkstra(string sourceCityName);
+    void printDijkstraPath(string sourceCityName);
+    void printPath(string sourceCityName, DepCity* city);
+
+    //add any auxiliary functions here in case you need them
+    //----
+};
+
+// Constructor
+Graph::Graph(int numOfNode, MinPriorityQueue *cityHeap)
+{
+   this->numOfNode = numOfNode;
+   this->cityHeap = cityHeap;
+}
+
+// Destructor
+Graph::~Graph()
+{
+   delete[] cityHeap;
+   cityHeap = NULL;
+   numOfNode = 0;
+}
+
+// Print the graph
+void Graph::printGraph()
+{
+    cout << left;
+    cout << setw(15) << "City Name"
+         << setw(12) << "d Value"
+         << setw(15) << "PI"
+         << "Arrival City List" << endl;
+    cityHeap->printHeap();
+
+}
+
+// Initialize single source for Dijkstra's algorithm
+void Graph::initialize_single_source(string sourceCityName)
+{
+   for(int i = 0;i<numOfNode;i++){
+       cityHeap->getDepCityArr()[i].d = INT_MAX;
+       cityHeap->getDepCityArr()[i].pi = nullptr;
+   }
+   int index = findOneCity(sourceCityName);
+   cityHeap->getDepCityArr()[index].d=0;
+}
+
+// Relax an edge in Dijkstra's algorithm
+void Graph::relax(DepCity u, DepCity v)
+{
+        int weight = 0; //????
+        ArrCity *arrCity = u.arrCityList->findArrCity(v.depCityName);
+        if(arrCity != nullptr){
+            weight = arrCity->distance;
+        }
+        if (v.d > u.d + weight)
+        {
+            v.d = u.d + weight;
+            v.pi = &u;
+        }
+}
+
+// Find a city in the graph by its name
+int Graph::findOneCity(string cityName)
+{
+    return cityHeap->isFound(cityName);
+}
+
+// Dijkstra's shortest path algorithm
+void Graph::dijkstra(string sourceCityName)
+{
+    MinPriorityQueue *queue = new MinPriorityQueue(numOfNode);
+    int index = findOneCity(sourceCityName);
+
+    cityHeap->getDepCityArr()[index].d = 0;
+
+    queue->insert(cityHeap->getDepCityArr()[index]);
+
+    // Print heap before running Dijkstra algorithm
+    queue->printHeap();
+
+    while (queue->getSize() > 0)
+    {
+        DepCity u = queue->getHeapMin();
+        queue->extractHeapMin();
+
+        ArrivalCityList *adjList = u.arrCityList;
+        ArrCity* v = adjList->getHead();
+
+        while (v != nullptr)
+        {
+            int indexV = findOneCity(v->arrCityName);
+
+            if (indexV != -1)
+            {
+                DepCity *depCityV = &cityHeap->getDepCityArr()[indexV];
+                relax(u, *depCityV);
+                queue->decreaseKey(indexV, *depCityV);
+            }
+
+            v = v->next;
+        }
+    }
+    delete queue;
+
+    printDijkstraPath(sourceCityName);
+}
+
+// Print shortest path for all cities from the source city
+void Graph::printDijkstraPath(string sourceCityName)
+{
+    cout << "\nSource City: " << sourceCityName << endl;
+    cout << "\n";
+    cout << setw(14) << "Arrival City"
+         << setw(15) << "Shortest Dist."
+         << setw(15) << "Shortest Path" << endl;
+    DepCity *arrivals = cityHeap->getDepCityArr();
+    for (int i = 0; i < numOfNode; i++)
+    {
+        DepCity arrival = arrivals[i]; // print arrivals in increasing order of shortest distance
+        cout << setw(15) << arrival.depCityName;
+        cout << setw(15) << fixed << setprecision(2) << arrival.d;
+        printPath(sourceCityName, &arrival); // print the string of cities involving arrows
+    }
+    cout << "\n\n";
+    for (int i = 0; i < numOfNode; i++)
+    {
+        cout << &arrivals[i];
+        cout << " ";
+    }
+
+}
+
+// Print the path from source city to destination city
+void Graph::printPath(string sourceCityName, DepCity *city) {
+    string path = sourceCityName;
+    /*
+    while (city != NULL && (city->depCityName != sourceCityName) && (city->depCityName.length() > 0))
+    {
+        path += "->" + city->depCityName + path;
+        city = city->pi;
+    }
+    if(city != NULL && city->depCityName == sourceCityName) {
+        path += sourceCityName + path;
+        cout << path << endl;
+    }*/
+
+    if (city == NULL || city->depCityName == sourceCityName) {
+        cout << path << endl;
+        return;
+    }
+    printPath(sourceCityName, city->pi);
+    cout << "->" << city->depCityName ;
+}
+
+#endif
